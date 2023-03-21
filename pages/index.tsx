@@ -18,6 +18,8 @@ export default function Home({ name, imageUrl }: Props) {
           <img src={imageUrl} />
         </div>
       </div>
+
+      <div className="pt-4 lg:hidden">Your are on mobile</div>
     </div>
   );
 }
@@ -29,7 +31,7 @@ type Response = {
   };
 };
 
-export const getServerSideProps: GetServerSideProps<Props> = async() => {
+export const getServerSideProps: GetServerSideProps<Props> = async () => {
   const { data } = await axios.get<Response>(
     `https://pokeapi.co/api/v2/pokemon/pikachu`
   );
@@ -40,4 +42,4 @@ export const getServerSideProps: GetServerSideProps<Props> = async() => {
     imageUrl: data.sprites.back_default,
   };
   return { props: _props };
-}
+};
