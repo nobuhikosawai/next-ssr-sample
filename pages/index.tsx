@@ -3,6 +3,7 @@ import { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 import Link from "next/link";
+import { useState } from "react";
 
 type Pokemon = {
   name: string;
@@ -10,12 +11,24 @@ type Pokemon = {
 
 type Props = {
   pokemons: Pokemon[];
+  next: string;
 };
 
 export default function Home({
-  pokemons,
+  pokemons: _pokemons,
+  next: _next,
+  count: _count,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const { t } = useTranslation("common");
+
+  const [pokemons, setPokemons] = useState<Pokemon[]>(_pokemons);
+  const [next, setNext] = useState<string>(_next);
+
+  async function handleGetMore() {
+    const { data } = await axios.get<Response>(next);
+    setPokemons([...pokemons, ...data.results]);
+    setNext(data.next);
+  }
 
   return (
     <div>
@@ -30,6 +43,8 @@ export default function Home({
             );
           })}
         </ul>
+
+        <button onClick={handleGetMore}>More</button>
       </div>
 
       <div className="pt-4 lg:hidden">Your are on mobile</div>
@@ -57,6 +72,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({
   // Pass data to the page via props
   const _props: Props = {
     pokemons: data.results,
+    next: data.next,
     ...(await serverSideTranslations(locale ?? "ja", ["common"])),
   };
   return { props: _props };
