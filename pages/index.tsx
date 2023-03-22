@@ -1,5 +1,7 @@
 import axios from "axios";
 import { GetServerSideProps } from "next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import { useTranslation } from "next-i18next";
 
 type Props = {
   name: string;
@@ -7,14 +9,18 @@ type Props = {
 };
 
 export default function Home({ name, imageUrl }: Props) {
+  const { t } = useTranslation("common");
+
   return (
     <div>
       <h1 className="text-3xl font-bold underline">Hello world!</h1>
       <div className="p-4">
-        <h2 className="text-xl">Pokemon</h2>
+        <h2 className="text-xl">{t("pokemon")}</h2>
 
         <div>
-          <p>name: {name}</p>
+          <p>
+            {t("name")}: {name}
+          </p>
           <img src={imageUrl} />
         </div>
       </div>
@@ -31,7 +37,9 @@ type Response = {
   };
 };
 
-export const getServerSideProps: GetServerSideProps<Props> = async () => {
+export const getServerSideProps: GetServerSideProps<Props> = async ({
+  locale,
+}) => {
   const { data } = await axios.get<Response>(
     `https://pokeapi.co/api/v2/pokemon/pikachu`
   );
@@ -40,6 +48,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async () => {
   const _props: Props = {
     name: data.name,
     imageUrl: data.sprites.back_default,
+    ...(await serverSideTranslations(locale ?? "ja", ["common"])),
   };
   return { props: _props };
 };
