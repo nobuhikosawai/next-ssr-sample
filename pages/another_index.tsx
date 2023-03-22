@@ -2,7 +2,6 @@ import axios from "axios";
 import { GetServerSideProps } from "next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
-import Link from "next/link";
 
 type Props = {
   name: string;
@@ -14,7 +13,6 @@ export default function Home({ name, imageUrl }: Props) {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold underline">Hello world!</h1>
       <div className="p-4">
         <h2 className="text-xl">{t("pokemon")}</h2>
 
@@ -27,8 +25,6 @@ export default function Home({ name, imageUrl }: Props) {
       </div>
 
       <div className="pt-4 lg:hidden">Your are on mobile</div>
-
-      <Link href="/another_index">another_index</Link>
     </div>
   );
 }
