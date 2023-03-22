@@ -1,5 +1,5 @@
 import axios from "axios";
-import { GetServerSideProps } from "next";
+import { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 import Link from "next/link";
@@ -9,7 +9,10 @@ type Props = {
   imageUrl: string;
 };
 
-export default function Home({ name, imageUrl }: Props) {
+export default function Home({
+  name,
+  imageUrl,
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const { t } = useTranslation("common");
 
   return (
