@@ -4,6 +4,7 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 import Link from "next/link";
 import { useState } from "react";
+import { QueryClient, dehydrate, useQuery } from "@tanstack/react-query";
 
 type Pokemon = {
   name: string;
@@ -14,28 +15,43 @@ type Props = {
   next: string;
 };
 
+async function getPokemons() {
+  const { data } = await axios.get<Response>(
+    `https://pokeapi.co/api/v2/pokemon`
+  );
+  return {
+    pokemons: data.results,
+    next: data.next,
+  };
+}
+
 export default function Home({
   pokemons: _pokemons,
   next: _next,
-  count: _count,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const { t } = useTranslation("common");
 
-  const [pokemons, setPokemons] = useState<Pokemon[]>(_pokemons);
-  const [next, setNext] = useState<string>(_next);
+  const { data, isLoading } = useQuery(["pokemons"], getPokemons, {
+    staleTime: Infinity,
+  });
 
+  // const [pokemons, setPokemons] = useState<Pokemon[]>(_pokemons);
+  // const [next, setNext] = useState<string>(_next);
+  //
   async function handleGetMore() {
-    const { data } = await axios.get<Response>(next);
-    setPokemons([...pokemons, ...data.results]);
-    setNext(data.next);
+    // const { data } = await axios.get<Response>(next);
+    // setPokemons([...pokemons, ...data.results]);
+    // setNext(data.next);
   }
+
+  if (!data || isLoading) return <div>loading...</div>;
 
   return (
     <div>
       <h1 className="text-3xl font-bold">{t("pokemon")}</h1>
       <div className="p-4">
         <ul>
-          {pokemons.map((pokemon) => {
+          {data.pokemons.map((pokemon) => {
             return (
               <li key={pokemon.name} className="underline">
                 <Link href={`/pokemon/${pokemon.name}`}>{pokemon.name}</Link>
@@ -62,17 +78,12 @@ type Response = {
   results: Result[];
 };
 
-export const getServerSideProps: GetServerSideProps<Props> = async ({
-  locale,
-}) => {
-  const { data } = await axios.get<Response>(
-    `https://pokeapi.co/api/v2/pokemon`
-  );
+export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
+  const queryClient = new QueryClient();
+  await queryClient.prefetchQuery(["pokemons"], getPokemons);
 
-  // Pass data to the page via props
-  const _props: Props = {
-    pokemons: data.results,
-    next: data.next,
+  const _props = {
+    dehydratedState: dehydrate(queryClient),
     ...(await serverSideTranslations(locale ?? "ja", ["common"])),
   };
   return { props: _props };
