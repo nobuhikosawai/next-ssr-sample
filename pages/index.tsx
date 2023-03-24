@@ -3,8 +3,11 @@ import { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 import Link from "next/link";
-import { useState } from "react";
-import { QueryClient, dehydrate, useQuery } from "@tanstack/react-query";
+import {
+  QueryClient,
+  dehydrate,
+  useInfiniteQuery,
+} from "@tanstack/react-query";
 
 type Pokemon = {
   name: string;
@@ -15,9 +18,9 @@ type Props = {
   next: string;
 };
 
-async function getPokemons() {
+async function getPokemons({ pageParam }: { pageParam: string }) {
   const { data } = await axios.get<Response>(
-    `https://pokeapi.co/api/v2/pokemon`
+    pageParam ?? `https://pokeapi.co/api/v2/pokemon`
   );
   return {
     pokemons: data.results,
@@ -31,36 +34,35 @@ export default function Home({
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const { t } = useTranslation("common");
 
-  const { data, isLoading } = useQuery(["pokemons"], getPokemons, {
+  const { data, fetchNextPage } = useInfiniteQuery(["pokemons"], getPokemons, {
+    getNextPageParam: (lastPage) => {
+      return lastPage.next;
+    },
     staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
-  // const [pokemons, setPokemons] = useState<Pokemon[]>(_pokemons);
-  // const [next, setNext] = useState<string>(_next);
-  //
-  async function handleGetMore() {
-    // const { data } = await axios.get<Response>(next);
-    // setPokemons([...pokemons, ...data.results]);
-    // setNext(data.next);
-  }
-
-  if (!data || isLoading) return <div>loading...</div>;
+  if (!data) return <div>loading...</div>;
 
   return (
     <div>
       <h1 className="text-3xl font-bold">{t("pokemon")}</h1>
       <div className="p-4">
         <ul>
-          {data.pokemons.map((pokemon) => {
-            return (
-              <li key={pokemon.name} className="underline">
-                <Link href={`/pokemon/${pokemon.name}`}>{pokemon.name}</Link>
-              </li>
-            );
+          {data.pages.map((page) => {
+            return page.pokemons.map((pokemon) => {
+              return (
+                <li key={pokemon.name} className="underline">
+                  <Link href={`/pokemon/${pokemon.name}`}>{pokemon.name}</Link>
+                </li>
+              );
+            });
           })}
         </ul>
 
-        <button onClick={handleGetMore}>More</button>
+        <button onClick={() => fetchNextPage()}>More</button>
       </div>
 
       <div className="pt-4 lg:hidden">Your are on mobile</div>
@@ -80,10 +82,18 @@ type Response = {
 
 export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
   const queryClient = new QueryClient();
-  await queryClient.prefetchQuery(["pokemons"], getPokemons);
+  await queryClient.prefetchInfiniteQuery(["pokemons"], getPokemons, {
+    getNextPageParam: (lastPage) => {
+      return lastPage.next;
+    },
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  });
 
   const _props = {
-    dehydratedState: dehydrate(queryClient),
+    dehydratedState: JSON.parse(JSON.stringify(dehydrate(queryClient))),
     ...(await serverSideTranslations(locale ?? "ja", ["common"])),
   };
   return { props: _props };
