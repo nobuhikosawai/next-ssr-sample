@@ -34,6 +34,7 @@ export default function Home({
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const { t } = useTranslation("common");
 
+  // @ts-ignore
   const { data, fetchNextPage } = useInfiniteQuery(["pokemons"], getPokemons, {
     getNextPageParam: (lastPage) => {
       return lastPage.next;
@@ -82,6 +83,7 @@ type Response = {
 
 export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
   const queryClient = new QueryClient();
+  // @ts-ignore
   await queryClient.prefetchInfiniteQuery(["pokemons"], getPokemons, {
     getNextPageParam: (lastPage) => {
       return lastPage.next;
